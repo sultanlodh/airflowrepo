@@ -1,20 +1,10 @@
-version: '3.8'
-
-x-airflow-common:
-  &airflow-common
-  image: apache/airflow:2.9.0
+x-airflow-common: &airflow-common
+  build: .
   environment:
-    &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags/repo/airflow/dag
-    _PIP_ADDITIONAL_REQUIREMENTS: >
-      apache-airflow-providers-mysql
-      apache-airflow-providers-databricks
-      pymysql
-      mysqlclient
-      databricks-sql-connector
   volumes:
     - dags:/opt/airflow/dags
   depends_on:
@@ -30,7 +20,22 @@ services:
       POSTGRES_PASSWORD: airflow
       POSTGRES_DB: airflow
     volumes:
-      - postgres-db-volume:/var/lib/postgresql/data
+      - postgres-db:/var/lib/postgresql/data
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    command: >
+      bash -c "
+      airflow db migrate &&
+      airflow users create
+      --username airflow
+      --password airflow
+      --firstname admin
+      --lastname user
+      --role Admin
+      --email admin@example.com
+      "
 
   airflow-webserver:
     <<: *airflow-common
@@ -44,34 +49,20 @@ services:
     container_name: airflow-scheduler
     command: scheduler
 
-  airflow-init:
-    <<: *airflow-common
-    container_name: airflow-init
-    command: >
-      bash -c "
-      airflow db init &&
-      airflow users create
-      --username airflow
-      --password airflow
-      --firstname admin
-      --lastname user
-      --role Admin
-      --email admin@example.com
-      "
-
   git-sync:
     image: registry.k8s.io/git-sync/git-sync:v4.0.0
-    container_name: airflow-git-sync
+    container_name: airflow-gitsync
+    user: "0:0"   # 🔥 FIX permission issue
     volumes:
       - dags:/git
     environment:
-      GIT_SYNC_REPO: https://github.com/sultanlodh/airflowrepo.git
-      GIT_SYNC_BRANCH: main
-      GIT_SYNC_ROOT: /git
-      GIT_SYNC_DEST: repo
-      GIT_SYNC_WAIT: 60
-      GIT_SYNC_ONE_TIME: "false"
+      GITSYNC_REPO: https://github.com/sultanlodh/airflowrepo.git
+      GITSYNC_REF: main
+      GITSYNC_ROOT: /git
+      GITSYNC_LINK: repo
+      GITSYNC_PERIOD: 60s
+      GITSYNC_ONE_TIME: "false"
 
 volumes:
-  postgres-db-volume:
+  postgres-db:
   dags:

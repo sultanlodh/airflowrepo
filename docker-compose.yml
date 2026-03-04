@@ -52,7 +52,7 @@ services:
   git-sync:
     image: registry.k8s.io/git-sync/git-sync:v4.0.0
     container_name: airflow-gitsync
-    user: "0:0"   # 🔥 FIX permission issue
+    user: "0:0"
     volumes:
       - dags:/git
     environment:

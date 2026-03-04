@@ -1,0 +1,5 @@
+apache-airflow-providers-mysql
+apache-airflow-providers-databricks
+pymysql
+mysqlclient
+databricks-sql-connector

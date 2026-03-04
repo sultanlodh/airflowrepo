@@ -19,7 +19,7 @@ with DAG(
 
     dbt_task = BashOperator(
         task_id="run_dbt",
-        bash_command="cd /opt/dbt && dbt run"
+        bash_command="docker exec airflow-dbt dbt run"
     )
 
     spark_task >> dbt_task

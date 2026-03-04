@@ -9,7 +9,6 @@ def run_spark_job():
 
     data = [("Sultan", 30), ("Airflow", 5)]
     df = spark.createDataFrame(data, ["name", "age"])
-
     df.show()
 
     spark.stop()

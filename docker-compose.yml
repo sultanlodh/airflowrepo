@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
 
   postgres:
@@ -9,6 +11,8 @@ services:
       POSTGRES_DB: airflow
     volumes:
       - postgres-db:/var/lib/postgresql/data
+    restart: always
+
 
   mysql:
     image: mysql:8.0
@@ -20,14 +24,20 @@ services:
       - "3306:3306"
     volumes:
       - mysql-db:/var/lib/mysql
+    restart: always
+
 
   spark:
-    image: bitnami/spark:3.5
+    image: apache/spark:3.5.0
     container_name: airflow-spark
-    environment:
-      - SPARK_MODE=master
+    command: >
+      /opt/spark/bin/spark-class
+      org.apache.spark.deploy.master.Master
     ports:
       - "8081:8080"
+      - "7077:7077"
+    restart: always
+
 
   git-sync:
     image: registry.k8s.io/git-sync/git-sync:v4.0.0
@@ -41,36 +51,64 @@ services:
       GITSYNC_ROOT: /git
       GITSYNC_LINK: repo
       GITSYNC_PERIOD: 60s
+    restart: always
+
+
+  dbt:
+    image: python:3.10-slim
+    container_name: airflow-dbt
+    command: >
+      bash -c "
+      pip install dbt-core==1.7.5 dbt-mysql==1.7.0 &&
+      tail -f /dev/null
+      "
+    volumes:
+      - ./dbt:/usr/app
+    working_dir: /usr/app
+    depends_on:
+      - mysql
+    restart: always
+
 
   airflow-webserver:
     build: .
     container_name: airflow-webserver
+    command: ["airflow", "webserver"]
     depends_on:
       - postgres
       - git-sync
+      - spark
+      - mysql
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       PYTHONPATH: /opt/airflow/dags/repo/airflow
     ports:
       - "8080:8080"
     volumes:
       - dags:/opt/airflow/dags
-      - ./dbt:/opt/dbt
+    restart: always
+
 
   airflow-scheduler:
     build: .
     container_name: airflow-scheduler
+    command: ["airflow", "scheduler"]
     depends_on:
       - postgres
       - git-sync
+      - spark
+      - mysql
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       PYTHONPATH: /opt/airflow/dags/repo/airflow
     volumes:
       - dags:/opt/airflow/dags
-      - ./dbt:/opt/dbt
+    restart: always
+
 
 volumes:
   postgres-db:

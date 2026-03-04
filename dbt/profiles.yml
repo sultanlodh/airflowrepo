@@ -1,0 +1,10 @@
+airflow_profile:
+  target: dev
+  outputs:
+    dev:
+      type: mysql
+      server: mysql
+      user: root
+      password: root
+      schema: testdb
+      port: 3306

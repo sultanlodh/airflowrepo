@@ -1,0 +1,7 @@
+name: airflow_dbt
+version: 1.0
+profile: airflow_profile
+
+models:
+  airflow_dbt:
+    materialized: table

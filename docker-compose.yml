@@ -1,15 +1,3 @@
-x-airflow-common: &airflow-common
-  build: .
-  environment:
-    AIRFLOW__CORE__EXECUTOR: LocalExecutor
-    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-    AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags/repo/airflow/dag
-  volumes:
-    - dags:/opt/airflow/dags
-  depends_on:
-    - postgres
-
 services:
 
   postgres:
@@ -22,32 +10,24 @@ services:
     volumes:
       - postgres-db:/var/lib/postgresql/data
 
-  airflow-init:
-    <<: *airflow-common
-    container_name: airflow-init
-    command: >
-      bash -c "
-      airflow db migrate &&
-      airflow users create
-      --username airflow
-      --password airflow
-      --firstname admin
-      --lastname user
-      --role Admin
-      --email admin@example.com
-      "
-
-  airflow-webserver:
-    <<: *airflow-common
-    container_name: airflow-webserver
+  mysql:
+    image: mysql:8.0
+    container_name: airflow-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: testdb
     ports:
-      - "8080:8080"
-    command: webserver
+      - "3306:3306"
+    volumes:
+      - mysql-db:/var/lib/mysql
 
-  airflow-scheduler:
-    <<: *airflow-common
-    container_name: airflow-scheduler
-    command: scheduler
+  spark:
+    image: bitnami/spark:3.5
+    container_name: airflow-spark
+    environment:
+      - SPARK_MODE=master
+    ports:
+      - "8081:8080"
 
   git-sync:
     image: registry.k8s.io/git-sync/git-sync:v4.0.0
@@ -57,12 +37,42 @@ services:
       - dags:/git
     environment:
       GITSYNC_REPO: https://github.com/sultanlodh/airflowrepo.git
-      GITSYNC_REF: main
+      GITSYNC_REF: UAT
       GITSYNC_ROOT: /git
       GITSYNC_LINK: repo
       GITSYNC_PERIOD: 60s
-      GITSYNC_ONE_TIME: "false"
+
+  airflow-webserver:
+    build: .
+    container_name: airflow-webserver
+    depends_on:
+      - postgres
+      - git-sync
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      PYTHONPATH: /opt/airflow/dags/repo/airflow
+    ports:
+      - "8080:8080"
+    volumes:
+      - dags:/opt/airflow/dags
+      - ./dbt:/opt/dbt
+
+  airflow-scheduler:
+    build: .
+    container_name: airflow-scheduler
+    depends_on:
+      - postgres
+      - git-sync
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      PYTHONPATH: /opt/airflow/dags/repo/airflow
+    volumes:
+      - dags:/opt/airflow/dags
+      - ./dbt:/opt/dbt
 
 volumes:
   postgres-db:
+  mysql-db:
   dags:

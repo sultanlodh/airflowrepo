@@ -12,8 +12,8 @@ from scripts.getMysqlData import MySQLDataExtractor
 def run_mysql_extractor():
 
     db_config = {
-    "host": "mysql_container",
-    "port": 3306,
+    "host": "127.0.0.1",
+    "port": 14306,
     "user": "ecom_user",
     "password": "mysecretpassword123",
     "database": "ecommerce_db"

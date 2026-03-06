@@ -62,7 +62,10 @@ class MySQLDataExtractor:
             logging.error("Could not start extractor")
 
         df0 = self.get_data()
-        print("Data \n", df0)    
+        print("Data \n", df0)  
+
+        self.cursor.close()
+        self.connection.close()  
 
 
 # if __name__ == "__main__":

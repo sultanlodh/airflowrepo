@@ -12,12 +12,12 @@ from scripts.getMysqlData import MySQLDataExtractor
 def run_mysql_extractor():
 
     db_config = {
-        "host": "127.0.0.1",
-        "user": "root",
-        "password": "MySecretPassword123",
-        "database": "ecommerce_db",
-        "port": 14306
-    }
+    "host": "mysql_container",
+    "port": 3306,
+    "user": "ecom_user",
+    "password": "mysecretpassword123",
+    "database": "ecommerce_db"
+}
 
     extractor = MySQLDataExtractor(db_config)
     extractor.run()

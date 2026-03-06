@@ -1,8 +1,11 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime
+import sys
 import logging
 
+# Add project path
+sys.path.append("/opt/airflow/dags/repo/airflow")
 from scripts.getMysqlData import MySQLDataExtractor
 
 

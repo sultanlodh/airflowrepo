@@ -61,7 +61,7 @@ services:
       - dags:/git
     environment:
       GITSYNC_REPO: https://github.com/sultanlodh/airflowrepo.git
-      GITSYNC_REF: main
+      GITSYNC_REF: Dev
       GITSYNC_ROOT: /git
       GITSYNC_LINK: repo
       GITSYNC_PERIOD: 60s

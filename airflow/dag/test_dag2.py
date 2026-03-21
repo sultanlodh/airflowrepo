@@ -1,7 +1,6 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime
-import pandas as pd
 
 
 def task1():
@@ -15,6 +14,7 @@ def task2():
 def task3():
     print("Task:-3 (Load)")
 
+
 default_args = {
     'owner': 'airflow',
     'start_date': datetime(2024, 1, 1),
@@ -22,26 +22,25 @@ default_args = {
 
 
 with DAG(
-    dag_id = "simple_etl_dag",
+    dag_id="simple_etl_dag",
     default_args=default_args,
     schedule_interval='@daily',
     catchup=False
 ) as dag:
-    
+
     t1 = PythonOperator(
-        task_id = "extrack",
-        python_collable = task1
+        task_id="extract",
+        python_callable=task1   # ✅ REQUIRED
     )
 
     t2 = PythonOperator(
-        task_id = "transform",
-        python_collable = task2
+        task_id="transform",
+        python_callable=task2   # ✅ REQUIRED
     )
 
     t3 = PythonOperator(
-        task_id = "lad",
-        python_collable = task3
+        task_id="load",
+        python_callable=task3   # ✅ REQUIRED
     )
 
     t1 >> t2 >> t3
-    
